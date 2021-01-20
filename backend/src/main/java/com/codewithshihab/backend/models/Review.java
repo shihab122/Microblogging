@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -14,6 +15,5 @@ public class Review implements Serializable {
     private VoteType voteType;
     private User reviewBy;
     private LocalDateTime reviewOn;
-    private String comments;
-    private LocalDateTime commentsOn;
+    private List<Comment> commentList;
 }
