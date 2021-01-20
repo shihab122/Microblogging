@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
@@ -25,4 +26,9 @@ public class Post implements Serializable {
     private LocalDateTime postedBy;
 
     private List<Review> reviewList;
+
+    // Common attributes for all model class
+    @Indexed
+    private List<ActivityFeed> activityFeedList;
+
 }

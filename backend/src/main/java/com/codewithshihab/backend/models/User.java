@@ -37,4 +37,9 @@ public class User implements Serializable {
 
     private List<Post> postList;
 
+    // Common attributes for all model class
+    @Indexed
+    private List<ActivityFeed> activityFeedList;
+
+
 }
