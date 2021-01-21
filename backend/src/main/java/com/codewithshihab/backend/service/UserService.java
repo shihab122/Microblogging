@@ -3,6 +3,7 @@ package com.codewithshihab.backend.service;
 import com.codewithshihab.backend.exception.ExecutionFailureException;
 import com.codewithshihab.backend.models.ActivityFeed;
 import com.codewithshihab.backend.models.Error;
+import com.codewithshihab.backend.models.LoginRequestBody;
 import com.codewithshihab.backend.models.User;
 import com.codewithshihab.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -17,6 +18,9 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -63,47 +67,60 @@ public class UserService  implements Serializable {
     }
 
     private void validateUsername(String username) throws ExecutionFailureException {
-        Error error = null;
-
-        // Username
-        if (StringUtils.isEmpty(username)) {
-            error = new Error("400", "username", "Username is empty", "Username is required field");
+        if (username.isEmpty()) {
+            throw new ExecutionFailureException(
+                    new Error(400, "username", "Username is empty", "Username is required field")
+            );
         }
         if (username.length() < 3 || username.length() > 50) {
-            error = new Error("400", "username", "Username length is invalid", "Username can be more than 2 & less than 50 characters");
+            throw new ExecutionFailureException(
+                    new Error(400, "username", "Username length is invalid", "Username can be more than 2 & less than 50 characters")
+            );
         }
-        if (!username.matches("^[a-z1-9._]+$")) {
-            error = new Error("400", "username", "Username has invalid character", "Username can have only alphabets");
-        }
-
-        if (error != null) {
-            throw new ExecutionFailureException(error);
+        if (!username.matches("^[a-z1-9._@]+$")) {
+            throw new ExecutionFailureException(
+                    new Error(400, "username", "Username has invalid character", "Username can have only alphabets")
+            );
         }
     }
 
     private void validatePassword(String password) throws ExecutionFailureException {
-        Error error = null;
         if (password == null || password.equals("")) {
-            error  = new Error("400", "password", "Invalid password", "Password is empty");
-            throw new ExecutionFailureException(error);
+            throw new ExecutionFailureException(
+                    new Error(400, "password", "Invalid password", "Password is empty")
+            );
         }
         if (password.length() < 6) {
-            error  = new Error("400", "password", "Invalid password length", "Password is empty");
-            throw new ExecutionFailureException(error);
+            throw new ExecutionFailureException(
+                    new Error(400, "password", "Invalid password length", "Password is empty")
+            );
         }
     }
 
-    public User save(User user, ActivityFeed activityFeed) throws ExecutionFailureException {
-//      Validate object
+    private void validateUser(User user) throws ExecutionFailureException {
         validateUsername(Optional.ofNullable(user.getUsername()).orElse(""));
         validatePassword(Optional.ofNullable(user.getPassword()).orElse(""));
 
-        Error error = null;
-        Optional<User> optionalUser = getByUsername(user.getUsername());
-        if (optionalUser.isPresent())
-            error = new Error("400", "username", "Username already exist", "Please choose another username.");
+        if (user.getName() == null
+                || (user.getName().getFirstName().isEmpty()
+                && user.getName().getMiddleName().isEmpty()
+                && user.getName().getLastName().isEmpty())
+        ) {
+            throw new ExecutionFailureException(
+                    new Error(400, "name", "Invalid Name", "Name must be 2 characters long.")
+            );
+        }
+    }
 
-        if (error != null) throw new ExecutionFailureException(error);
+    public User save(User user) throws ExecutionFailureException {
+//      Validate object
+        validateUser(user);
+
+        Optional<User> optionalUser = userRepository.findByUsername(user.getUsername());
+        if (optionalUser.isPresent())
+            throw new ExecutionFailureException(
+                    new Error(400, "username", "Username already exist", "Please choose another username.")
+            );
 
         User newUser = new User();
         newUser.setUsername(user.getUsername());
@@ -111,6 +128,7 @@ public class UserService  implements Serializable {
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setActivityFeedList(new ArrayList<>());
 
+        ActivityFeed activityFeed = new ActivityFeed();
         activityFeed.setTitle("User was created");
         activityFeed.setDescription("");
         activityFeed.setActionOn(LocalDateTime.now());
@@ -119,8 +137,12 @@ public class UserService  implements Serializable {
         return userRepository.insert(newUser);
     }
 
-    public Optional<User> getByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public User getByUsername(String username) throws ExecutionFailureException {
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (!optionalUser.isPresent()) {
+            throw new ExecutionFailureException(new Error(400, "username", "Invalid Username", "Username does not exist."));
+        }
+        return optionalUser.get();
     }
 
     public Page<User> findAll(Integer size, Integer offset) {
@@ -130,29 +152,30 @@ public class UserService  implements Serializable {
         return userRepository.findAll(pageRequest);
     }
 
-    public String login(String username, String password, boolean rememberMe, ActivityFeed activityFeed) throws ExecutionFailureException {
-        validateUsername(Optional.ofNullable(username).orElse(""));
-        validatePassword(Optional.ofNullable(password).orElse(""));
+    public String login(LoginRequestBody loginRequestBody) throws ExecutionFailureException {
+        validateUsername(Optional.ofNullable(loginRequestBody.getUsername()).orElse(""));
+        validatePassword(Optional.ofNullable(loginRequestBody.getPassword()).orElse(""));
 
-        Optional<User> optionalUser = getByUsername(username);
-        if (optionalUser.isPresent()) {
-            throw new ExecutionFailureException(new Error("400", "username", "Invalid login", "Username is invalid."));
+        Optional<User> optionalUser = userRepository.findByUsername(loginRequestBody.getUsername());
+        if (!optionalUser.isPresent()) {
+            throw new ExecutionFailureException(new Error(400, "username", "Invalid User", "Username is invalid."));
         }
 
+        ActivityFeed activityFeed = new ActivityFeed();
         activityFeed.setDescription("");
         activityFeed.setActionOn(LocalDateTime.now());
 
         User user = optionalUser.get();
 
         // Invalid Password
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(loginRequestBody.getPassword(), user.getPassword())) {
             activityFeed.setTitle("Login attempt failed");
 
             Query query = Query.query(Criteria.where("id").is(user.getId()));
             Update update = new Update();
             update.push("activityFeedList", activityFeed);
             mongoTemplate.updateFirst(query, update, User.class);
-            throw new ExecutionFailureException(new Error("400", "password", "Invalid login", "Password is invalid."));
+            throw new ExecutionFailureException(new Error(401, "password", "Invalid login", "Password is invalid."));
         }
 
         // Valid Password
@@ -171,11 +194,10 @@ public class UserService  implements Serializable {
                 .setClaims(claims)
                 .setIssuer(applicationName)
                 .setIssuedAt(generateCurrentDate())
-                .setExpiration(generateExpirationDate(rememberMe))
+                .setExpiration(generateExpirationDate(loginRequestBody.isRememberMe()))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
-
 
     private long getCurrentTimeMillis() {
         return System.currentTimeMillis();
@@ -185,7 +207,6 @@ public class UserService  implements Serializable {
         return new Date(getCurrentTimeMillis());
     }
 
-
     private Date generateExpirationDate(boolean rememberMe) {
         if (rememberMe) {
             return new Date(getCurrentTimeMillis() + 10080 * 1000);
@@ -193,5 +214,18 @@ public class UserService  implements Serializable {
         return new Date(getCurrentTimeMillis() + (jwtActiveDuration * 1000L));
     }
 
+    public User getUserFromAccessToken(String accessToken) throws ExecutionFailureException {
+        return getByUsername(getUserNameFromAccessToken());
+    }
+
+    public String getUserNameFromAccessToken() throws ExecutionFailureException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (!(authentication instanceof AnonymousAuthenticationToken)) {
+            return authentication.getName();
+        }
+        throw new ExecutionFailureException(
+                new Error(400, "username", "Invalid User", "Use does not exist.")
+        );
+    }
 
 }

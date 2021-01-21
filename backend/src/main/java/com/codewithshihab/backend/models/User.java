@@ -24,7 +24,6 @@ public class User implements Serializable {
     @Indexed(unique = true)
     private String username;
 
-    @JsonIgnore
     private String password;
 
     private Name name;
@@ -34,8 +33,6 @@ public class User implements Serializable {
     private List<String> emailList;
 
     private List<String> phoneNumberList;
-
-    private List<Post> postList;
 
     // Common attributes for all model class
     @Indexed

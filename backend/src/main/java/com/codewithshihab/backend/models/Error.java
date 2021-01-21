@@ -19,7 +19,7 @@ public class Error implements Serializable {
      * 500 Internal Server Error — A generic error occurred on the server
      * 503 Service Unavailable — The requested service is not available
      */
-    private String code;
+    private int code;
     private String field;
     private String message;
     private String description;

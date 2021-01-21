@@ -11,9 +11,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Review implements Serializable {
+public class Vote implements Serializable {
     private VoteType voteType;
-    private User reviewBy;
-    private LocalDateTime reviewOn;
-    private List<Comment> commentList;
+    private User voteBy;
+    private LocalDateTime voteOn;
 }

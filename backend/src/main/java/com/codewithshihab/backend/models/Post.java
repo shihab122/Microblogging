@@ -23,9 +23,11 @@ public class Post implements Serializable {
 
     private LocalDateTime postedAt;
 
-    private LocalDateTime postedBy;
+    private User postedBy;
 
-    private List<Review> reviewList;
+    private List<Vote> voteList;
+
+    private List<Comment> commentList;
 
     // Common attributes for all model class
     @Indexed
