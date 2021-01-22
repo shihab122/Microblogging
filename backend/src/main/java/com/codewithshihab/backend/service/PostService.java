@@ -4,11 +4,14 @@ import com.codewithshihab.backend.exception.ExecutionFailureException;
 import com.codewithshihab.backend.models.Error;
 import com.codewithshihab.backend.models.*;
 import com.codewithshihab.backend.repository.PostRepository;
+import javafx.geometry.Pos;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -19,6 +22,20 @@ public class PostService implements Serializable {
     public PostService(PostRepository postRepository, UserService userService) {
         this.userService = userService;
         this.postRepository = postRepository;
+    }
+
+    public List<Post> findAll() {
+        return postRepository.findAll(Sort.by(Sort.Direction.DESC, "postedAt"));
+    }
+
+    public Post findPostById(String postId) throws ExecutionFailureException {
+        Optional<Post> optionalPost = postRepository.findById(postId);
+        if (!optionalPost.isPresent()) {
+            throw new ExecutionFailureException(
+                    new Error(400, "id", "Post id does not exist", "Post id was not found in the database")
+            );
+        }
+        return optionalPost.get();
     }
 
     public Post create(Post post, String accessToken) throws ExecutionFailureException {
@@ -37,7 +54,7 @@ public class PostService implements Serializable {
         return postRepository.insert(post);
     }
 
-    public Post addVote(String postId, Vote vote, String accessToken) throws ExecutionFailureException {
+    public Post addVote(Vote vote, String postId, String accessToken) throws ExecutionFailureException {
         vote.setVoteBy(userService.getUserFromAccessToken(accessToken));
         validateVote(vote);
         vote.setVoteOn(LocalDateTime.now());
@@ -59,7 +76,7 @@ public class PostService implements Serializable {
         return postRepository.save(optionalPost.get());
     }
 
-    public Post addComment(String postId, Comment comment, String accessToken) throws ExecutionFailureException {
+    public Post addComment(Comment comment, String postId, String accessToken) throws ExecutionFailureException {
         comment.setCommentBy(userService.getUserFromAccessToken(accessToken));
         validateComment(comment);
         comment.setCommentOn(LocalDateTime.now());
@@ -129,4 +146,5 @@ public class PostService implements Serializable {
             );
         }
     }
+
 }

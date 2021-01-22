@@ -21,6 +21,15 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("get-user-from-accesstoken/{accessToken}")
+    public ResponseEntity<?> getUserFromAccessToken(@PathVariable String accessToken, HttpServletRequest httpServletRequest) {
+        try {
+            return new ResponseEntity<>(userService.getUserFromAccessToken(accessToken), HttpStatus.OK);
+        } catch (ExecutionFailureException e) {
+            return new ResponseEntity<>(e.getError(), HttpStatus.valueOf(e.getError().getCode()));
+        }
+    }
+
     @PostMapping("create")
     public ResponseEntity<?> createUser(@RequestBody User user, HttpServletRequest httpServletRequest) {
         try {

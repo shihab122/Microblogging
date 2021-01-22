@@ -215,17 +215,31 @@ public class UserService  implements Serializable {
     }
 
     public User getUserFromAccessToken(String accessToken) throws ExecutionFailureException {
-        return getByUsername(getUserNameFromAccessToken());
+        return getByUsername(getUsernameFromAccessToken(accessToken));
     }
 
-    public String getUserNameFromAccessToken() throws ExecutionFailureException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            return authentication.getName();
+    public String getUsernameFromAccessToken(String accessToken) {
+        String username;
+        try {
+            final Claims claims = getClaimsFromAccessToken(accessToken);
+            username = claims.getSubject();
+        } catch (Exception e) {
+            username = null;
         }
-        throw new ExecutionFailureException(
-                new Error(400, "username", "Invalid User", "Use does not exist.")
-        );
+        return username;
+    }
+
+    private Claims getClaimsFromAccessToken(String token) {
+        Claims claims;
+        try {
+            claims = Jwts.parser()
+                    .setSigningKey(jwtSecret)
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            claims = null;
+        }
+        return claims;
     }
 
 }
