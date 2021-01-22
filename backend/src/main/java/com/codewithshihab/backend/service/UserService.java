@@ -123,6 +123,7 @@ public class UserService  implements Serializable {
             );
 
         User newUser = new User();
+        newUser.setName(user.getName());
         newUser.setUsername(user.getUsername());
         newUser.setPassword(passwordEncoder.encode(user.getPassword().trim()));
         newUser.setCreatedAt(LocalDateTime.now());
