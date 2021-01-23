@@ -27,7 +27,7 @@ public class PostController {
         return new ResponseEntity<>(postService.findAll(), HttpStatus.OK);
     }
 
-    @PostMapping("view/{postId}")
+    @GetMapping("view/{postId}")
     public ResponseEntity<?> findPostById(@PathVariable String postId, HttpServletRequest httpServletRequest) {
         try {
             return new ResponseEntity<>(postService.findPostById(postId), HttpStatus.OK);

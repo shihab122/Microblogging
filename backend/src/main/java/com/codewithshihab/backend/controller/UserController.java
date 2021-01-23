@@ -21,7 +21,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("get-user-from-accesstoken/{accessToken}")
+    @GetMapping("get-user-from-token/{accessToken}")
     public ResponseEntity<?> getUserFromAccessToken(@PathVariable String accessToken, HttpServletRequest httpServletRequest) {
         try {
             return new ResponseEntity<>(userService.getUserFromAccessToken(accessToken), HttpStatus.OK);
