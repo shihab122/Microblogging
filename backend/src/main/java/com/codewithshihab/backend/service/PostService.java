@@ -39,11 +39,11 @@ public class PostService implements Serializable {
     }
 
     public Post create(Post post, String accessToken) throws ExecutionFailureException {
-        validatePost(post);
         post.setPostedAt(LocalDateTime.now());
         post.setPostedBy(userService.getUserFromAccessToken(accessToken));
         post.setVoteList(new ArrayList<>());
         post.setCommentList(new ArrayList<>());
+        validatePost(post);
 
         ActivityFeed activityFeed = new ActivityFeed();
         post.setActivityFeedList(new ArrayList<>());

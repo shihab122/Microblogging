@@ -2,6 +2,7 @@ package com.codewithshihab.backend.controller;
 
 import com.codewithshihab.backend.exception.ExecutionFailureException;
 import com.codewithshihab.backend.models.LoginRequestBody;
+import com.codewithshihab.backend.models.SendToken;
 import com.codewithshihab.backend.models.User;
 import com.codewithshihab.backend.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -42,7 +43,7 @@ public class UserController {
     @PostMapping("login")
     public ResponseEntity<?> login(@RequestBody LoginRequestBody loginRequestBody, HttpServletRequest httpServletRequest) {
         try {
-            return new ResponseEntity<>(userService.login(loginRequestBody), HttpStatus.OK);
+            return new ResponseEntity<>(new SendToken(userService.login(loginRequestBody)), HttpStatus.OK);
         } catch (ExecutionFailureException e) {
             return new ResponseEntity<>(e.getError(), HttpStatus.valueOf(e.getError().getCode()));
         }
